@@ -73,7 +73,7 @@ class ControlPanel:
         layer_select_frame = ttk.Frame(viz_frame, style='Blue.TFrame')
         layer_select_frame.pack(fill=tk.X, padx=5, pady=5)
 
-        # Надпись и поле ввода в одной строке
+ 
         layer_input_frame = ttk.Frame(layer_select_frame, style='Blue.TFrame')
         layer_input_frame.pack(fill=tk.X, pady=(0, 5))
 
@@ -81,11 +81,11 @@ class ControlPanel:
         self.layers_var = tk.StringVar(value="0,1")
         ttk.Entry(layer_input_frame, textvariable=self.layers_var, width=15).pack(side=tk.LEFT, fill=tk.X, expand=True)
 
-        # Кнопки визуализации слоев
+      
         layer_buttons_frame = ttk.Frame(layer_select_frame, style='Blue.TFrame')
         layer_buttons_frame.pack(fill=tk.X)
 
-        # Контейнер для центрирования кнопок
+    
         center_frame = ttk.Frame(layer_buttons_frame, style='Blue.TFrame')
         center_frame.pack(expand=True)
 
@@ -118,7 +118,7 @@ class ControlPanel:
                                       foreground='#666666')
         instruction_label.pack(anchor=tk.W)
 
-        # Кнопка вывода данных в файл
+     
         export_button = tk.Button(step_frame, text="ВЫВОД ДАННЫХ В ФАЙЛ",
                                   command=self.main_app.export_to_file,
                                   bg='#66b3ff', fg='white',
@@ -126,7 +126,7 @@ class ControlPanel:
                                   relief=tk.RAISED, bd=2)
         export_button.pack(fill=tk.X, pady=(5, 0))
 
-        # Информация о расчете
+    
         info_frame = ttk.LabelFrame(self.parent, text="ИСТОРИЯ РАСЧЕТОВ", style='Blue.TLabelframe')
         info_frame.pack(fill=tk.BOTH, expand=True)
 
@@ -134,7 +134,7 @@ class ControlPanel:
                                                    bg='#f0f8ff', fg='#0066cc')
         self.info_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        # Статус бар
+     
         self.status_var = tk.StringVar(value="Готов к работе")
         status_label = tk.Label(self.parent, textvariable=self.status_var,
                                 bg='#cce5ff', fg='#0066cc', relief=tk.SUNKEN,
@@ -151,7 +151,7 @@ class ControlPanel:
             if len(layers) > 15:
                 messagebox.showerror("Ошибка", "Можно выбрать не более 15 слоев")
                 return None
-            # Конец добавления
+          
 
             if self.main_app.solver:
                 max_layer = len(self.main_app.solver.t) - 1
