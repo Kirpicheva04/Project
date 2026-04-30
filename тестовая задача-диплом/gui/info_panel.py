@@ -10,17 +10,17 @@ class InfoPanel:
         self.setup_info_panel()
 
     def setup_info_panel(self):
-        # Информация о задаче
+     
         info_frame = ttk.LabelFrame(self.parent, text="ПОСТАНОВКА ЗАДАЧИ", style='Blue.TLabelframe')
         info_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
 
-        # Создаем текстовое поле
+     
         self.info_text_widget = scrolledtext.ScrolledText(info_frame, height=8, width=60,
                                                           bg='#f0f8ff', fg='#0066cc',
                                                           font=('Courier', 10), wrap=tk.WORD, padx=10)
         self.info_text_widget.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        # Обновляем информацию при запуске
+      
         self.update_problem_info()
 
     def update_problem_info(self):
