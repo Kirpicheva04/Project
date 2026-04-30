@@ -1,0 +1,173 @@
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <vector>
+#include <string>
+#include <cmath>
+
+std::string identifyShape(const std::vector<cv::Point>& approx, double area, double perimeter) {
+    int vertices = approx.size();
+    double circularity = 4 * CV_PI * area / (perimeter * perimeter);
+
+    if (vertices == 3) return "Triangle";
+    else if (vertices == 4) {
+        std::vector<double> sides;
+        for (int i = 0; i < 4; i++) {
+            cv::Point p1 = approx[i];
+            cv::Point p2 = approx[(i + 1) % 4];
+            double side = sqrt(pow(p2.x - p1.x, 2) + pow(p2.y - p1.y, 2));
+            sides.push_back(side);
+        }
+
+        std::vector<double> angles;
+        for (int i = 0; i < 4; i++) {
+            cv::Point p1 = approx[i];
+            cv::Point p2 = approx[(i + 1) % 4];
+            cv::Point p3 = approx[(i + 2) % 4];
+
+            cv::Point v1 = p2 - p1;
+            cv::Point v2 = p3 - p2;
+
+            double angle = std::abs(std::atan2(v1.y, v1.x) - std::atan2(v2.y, v2.x));
+            angle = angle * 180 / CV_PI;
+            if (angle > 180) angle = 360 - angle;
+            angles.push_back(angle);
+        }
+
+        int rightAngleCount = 0;
+        for (double angle : angles) {
+            if (std::abs(angle - 90) < 20) {
+                rightAngleCount++;
+            }
+        }
+
+        double avgSide = (sides[0] + sides[1] + sides[2] + sides[3]) / 4;
+        bool sidesEqual = true;
+        for (double side : sides) {
+            if (std::abs(side - avgSide) > avgSide * 0.15) {
+                sidesEqual = false;
+                break;
+            }
+        }
+
+        if (rightAngleCount >= 2) {
+            cv::Rect rect = cv::boundingRect(approx);
+            double aspectRatio = (double)rect.width / rect.height;
+
+            if (std::abs(aspectRatio - 1.0) < 0.15) {
+                return "Square";
+            }
+            else {
+                return "Rectangle";
+            }
+        }
+        else if (sidesEqual) {
+            return "Rhombus";
+        }
+        else {
+            return "Quadrilateral";
+        }
+    }
+    else if (vertices == 5) return "Pentagon";
+    else if (vertices == 6) return "Hexagon";
+    else if (vertices >= 7) {
+        if (circularity > 0.85) {
+            try {
+                cv::RotatedRect ellipse = cv::fitEllipse(approx);
+                double ratio = ellipse.size.width / ellipse.size.height;
+                if (ratio > 1.2 || ratio < 0.8) {
+                    return "Oval";
+                }
+                else {
+                    return "Circle";
+                }
+            }
+            catch (...) {
+                return circularity > 0.88 ? "Circle" : "Oval";
+            }
+        }
+        else {
+            return "Oval";
+        }
+    }
+    else {
+        return "Shape";
+    }
+}
+
+int main() {
+    setlocale(LC_ALL, "rus");
+
+    cv::Mat img = cv::imread("Figure.png");
+    if (img.empty()) {
+        std::cout << "Не удалось загрузить изображение Figure.png!" << std::endl;
+        return -1;
+    }
+
+    cv::Mat result = img.clone();
+
+    cv::Mat gray;
+    cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
+    cv::GaussianBlur(gray, gray, cv::Size(5, 5), 0);
+
+    cv::Mat binary;
+    cv::threshold(gray, binary, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
+
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+    cv::morphologyEx(binary, binary, cv::MORPH_CLOSE, kernel);
+
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(binary, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    std::cout << "\n=== АНАЛИЗ ФИГУР ===" << std::endl;
+
+    int figureNumber = 0;
+
+    for (size_t i = 0; i < contours.size(); i++) {
+        double area = cv::contourArea(contours[i]);
+        if (area < 500 || area > 50000) continue;
+
+        figureNumber++;
+        double perimeter = cv::arcLength(contours[i], true);
+
+        std::vector<cv::Point> approx;
+        cv::approxPolyDP(contours[i], approx, 0.02 * perimeter, true);
+
+        std::string shapeName = identifyShape(approx, area, perimeter);
+
+        cv::Moments m = cv::moments(contours[i]);
+        if (m.m00 == 0) continue;
+        cv::Point2f center(m.m10 / m.m00, m.m01 / m.m00);
+
+        cv::drawContours(result, std::vector<std::vector<cv::Point>>{contours[i]}, -1, cv::Scalar(0, 255, 0), 2);
+        cv::circle(result, center, 4, cv::Scalar(0, 0, 255), -1);
+
+        std::string label = shapeName + " P:" + std::to_string((int)perimeter);
+
+        double fontScale = 0.35;
+        int thickness = 1;     
+        int fontFace = cv::FONT_HERSHEY_SIMPLEX;
+
+        int baseline;
+        cv::Size textSize = cv::getTextSize(label, fontFace, fontScale, thickness, &baseline);
+
+        cv::Point textPos(center.x - textSize.width / 2, center.y + textSize.height / 2);
+
+        cv::rectangle(result,
+            cv::Point(textPos.x - 3, textPos.y - textSize.height - 2),
+            cv::Point(textPos.x + textSize.width + 3, textPos.y + 3),
+            cv::Scalar(255, 255, 255),
+            -1);
+
+        cv::putText(result, label, textPos, fontFace, fontScale, cv::Scalar(0, 0, 0), thickness);
+
+        std::cout << "Фигура " << figureNumber << ": " << shapeName
+            << " | Периметр: " << (int)perimeter << std::endl;
+    }
+
+    std::cout << "\nВсего найдено фигур: " << figureNumber << std::endl;
+
+    cv::imshow("Результат", result);
+    cv::imwrite("Результат1.jpg", result);
+    cv::waitKey(0);
+    return 0;
+}

@@ -1,0 +1,35 @@
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <vector>
+#pragma comment(lib, "opencv_world480.lib")
+using namespace cv;
+using namespace std;
+
+int main() {
+    Mat hsv;
+    Mat img = imread("image_png.png");
+    if (img.empty()) {
+        cout << "Ошибка загрузки изображения" << endl;
+        cout << "Текущая директория: " << endl;
+        system("cd");
+        system("dir *.png");
+        return -1;
+    }
+
+    cvtColor(img, hsv, COLOR_BGR2HSV);
+
+    Mat mask_green;
+
+    inRange(hsv, Scalar(55, 50, 50), Scalar(85, 255, 255), mask_green);
+
+    imshow("Original Image", img);
+    imshow("Green Mask", mask_green);
+
+    Mat result;
+    img.copyTo(result, mask_green);
+    imshow("Green Objects", result);
+
+    waitKey(0);
+
+    return 0;
+}

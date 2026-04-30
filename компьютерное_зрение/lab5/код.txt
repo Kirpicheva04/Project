@@ -1,0 +1,103 @@
+﻿#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <vector>
+#include <string>
+
+class ShapeDetector {
+private:
+    double minArea = 20.0;
+    double circularityThreshold = 0.75;
+    double epsilon = 0.04;
+    
+    std::string getShapeType(const std::vector<cv::Point>& contour, double area, double peri) {
+        std::vector<cv::Point> approx;
+        cv::approxPolyDP(contour, approx, epsilon * peri, true);
+        
+        if (approx.size() == 3) {
+            return "Triangle";
+        }
+        else if (approx.size() == 4) {
+            return "Rectangle";
+        }
+        else {
+            double circularity = 4 * CV_PI * area / (peri * peri);
+            if (circularity > circularityThreshold) {
+                return "Circle";
+            }
+        }
+        return "";
+    }
+    
+    void drawShape(cv::Mat& frame, const std::vector<cv::Point>& contour, const std::string& shape) {
+        cv::Rect box = cv::boundingRect(contour);
+        cv::rectangle(frame, box, cv::Scalar(0, 255, 0), 2);
+        
+        cv::Moments m = cv::moments(contour);
+        if (m.m00 != 0) {
+            cv::Point center(m.m10 / m.m00, m.m01 / m.m00);
+            cv::putText(frame, shape, center,
+                cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 255, 0), 2);
+        }
+    }
+    
+public:
+    void processFrame(cv::Mat& frame) {
+        cv::Mat gray, edges;
+        
+        cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
+        cv::Canny(gray, edges, 50, 100);
+        
+        std::vector<std::vector<cv::Point>> contours;
+        cv::findContours(edges, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+        
+        for (const auto& contour : contours) {
+            double area = cv::contourArea(contour);
+            if (area < minArea) continue;
+            
+            double peri = cv::arcLength(contour, true);
+            std::string shape = getShapeType(contour, area, peri);
+            
+            if (!shape.empty()) {
+                drawShape(frame, contour, shape);
+            }
+        }
+    }
+};
+
+int main() {
+    setlocale(LC_ALL, "Russian");
+    
+    cv::VideoCapture cap("test.mkv");
+    
+    if (!cap.isOpened()) {
+        std::cerr << "Error: could not open video" << std::endl;
+        return -1;
+    }
+    
+    std::cout << "Video successfully opened" << std::endl;
+    std::cout << "Size: " << cap.get(cv::CAP_PROP_FRAME_WIDTH) << "x" << cap.get(cv::CAP_PROP_FRAME_HEIGHT) << std::endl;
+    std::cout << "ESC - exit" << std::endl;
+    
+    ShapeDetector detector;
+    cv::Mat frame;
+    int frameCount = 0;
+    
+    while (cap.read(frame)) {
+        frameCount++;
+        
+        detector.processFrame(frame);
+        
+        cv::imshow("Shape Detection", frame);
+        
+        char key = cv::waitKey(30);
+        if (key == 27) break;
+    }
+    
+    cap.release();
+    cv::destroyAllWindows();
+    
+    std::cout << "Frames processed: " << frameCount << std::endl;
+    std::cout << "Program finished" << std::endl;
+    
+    return 0;
+}

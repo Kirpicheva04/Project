@@ -1,0 +1,46 @@
+#include <opencv2/opencv.hpp>
+#include <iostream>
+
+int main() {
+   
+    cv::Mat img = cv::imread("image.jpg");
+
+    if (img.empty()) {
+        std::cout << "Ошибка" << std::endl;
+        std::cin.get();
+        return -1;
+    }
+
+    
+    cv::imshow("Оригинал", img);
+
+    cv::Mat gray;
+    cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
+    cv::imshow("Серый", gray);
+
+    cv::Mat resized;
+    cv::resize(img, resized, cv::Size(400, 300));
+    cv::imshow("Уменьшенный", resized);
+
+    cv::Mat rotated;
+    cv::Point2f center(img.cols / 2.0f, img.rows / 2.0f);
+    cv::Mat rotMat = cv::getRotationMatrix2D(center, 45, 1.0);
+    cv::warpAffine(img, rotated, rotMat, img.size());
+    cv::imshow("Повернутый", rotated);
+
+    cv::Mat blurred;
+    cv::GaussianBlur(img, blurred, cv::Size(15, 15), 0.0);
+    cv::imshow("Размытый", blurred);
+
+    cv::Mat edges;
+    cv::Canny(gray, edges, 50, 150);
+    cv::imshow("Границы", edges);
+
+    cv::imwrite("gray.jpg", gray);
+    cv::imwrite("edges.jpg", edges);
+
+    cv::waitKey(0);
+    cv::destroyAllWindows();
+
+    return 0;
+}

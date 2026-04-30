@@ -1,0 +1,34 @@
+#include <opencv2/opencv.hpp>
+#include <vector>
+
+using namespace cv;
+using namespace std;
+
+int main() {
+    Mat canvas(600, 800, CV_8UC3, Scalar(0, 0, 0));
+
+    line(canvas, Point(0, 0), Point(799, 599), Scalar(255, 0, 0), 3);
+
+    rectangle(canvas, Point(100, 100), Point(300, 250), Scalar(0, 255, 0), 2);
+
+    circle(canvas, Point(400, 300), 100, Scalar(0, 0, 255), -1);
+
+    ellipse(canvas, Point(400, 300), Size(150, 70), 30, 0, 360, Scalar(0, 255, 255), 2);
+
+    vector<Point> pts = { Point(500, 100), Point(600, 150), Point(650, 250), Point(550, 300), Point(450, 200) };
+    polylines(canvas, pts, true, Scalar(255, 255, 0), 2);
+
+    putText(canvas, "Kirpicheva D.S. 22-PM-1",
+        Point(20, 580),
+        FONT_HERSHEY_SIMPLEX,
+        1.0,
+        Scalar(255, 255, 255),
+        2);
+
+    imshow("Picture", canvas);
+    waitKey(0);
+
+    imwrite("picture.png", canvas);
+
+    return 0;
+}
